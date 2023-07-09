@@ -8,4 +8,7 @@
 6. 数据同步：全量同步(首次)+实时增量同步(新数据)。编写单次脚本实现CommandLineRunner接口，首次启动项目时会将MySQL的数据全量同步到ES中。使用canal组件监听MySQL的binlog日志，从而实现将MySQL中变化的数据实时增量同步到ES中。
 
 步骤：
-1. 
+1. 开启elasticsearch：`elasticsearch.bat`
+2. 开启canal：`canal.bat`
+3. 启动SimpleCanalClientExample
+4. 启动项目MainApplication

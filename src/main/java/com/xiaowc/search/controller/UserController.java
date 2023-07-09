@@ -297,7 +297,7 @@ public class UserController {
         User user = new User();
         BeanUtils.copyProperties(userUpdateMyRequest, user);
         user.setId(loginUser.getId());
-        boolean result = userService.updateById(user);
+        boolean result = userService.updateById(user); // 更新个人信息
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
     }

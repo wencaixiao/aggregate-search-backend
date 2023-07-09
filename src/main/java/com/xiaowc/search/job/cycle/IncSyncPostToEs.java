@@ -35,24 +35,26 @@ public class IncSyncPostToEs {
      */
     @Scheduled(fixedRate = 60 * 1000)
     public void run() {
-        // 查询近 5 分钟内的数据
+        // 查询近 5 分钟内更新过的数据
         Date fiveMinutesAgoDate = new Date(new Date().getTime() - 5 * 60 * 1000L);
+        // 自己写的SQL，在PostMapper.xml文件中
         List<Post> postList = postMapper.listPostWithDelete(fiveMinutesAgoDate); // 在数据库中以updateTime为条件查询
-        if (CollectionUtils.isEmpty(postList)) {
+        if (CollectionUtils.isEmpty(postList)) { // 五分钟内没有更新过数据就不用同步，直接返回
             log.info("no inc post");
             return;
         }
         List<PostEsDTO> postEsDTOList = postList.stream()
                 .map(PostEsDTO::objToDto)
                 .collect(Collectors.toList()); // 将帖子转成包装类(就是对象es中的字段)
-        final int pageSize = 500;
-        int total = postEsDTOList.size();
-        log.info("IncSyncPostToEs start, total {}", total);
+        final int pageSize = 500; // 每次同步的数量
+        int total = postEsDTOList.size(); // 五分钟内更新过的数据总数
+        log.info("IncSyncPostToEs start, total {}", total); // 开始同步日志
         for (int i = 0; i < total; i += pageSize) {
             int end = Math.min(i + pageSize, total);
             log.info("sync from {} to {}", i, end);
-            postEsDao.saveAll(postEsDTOList.subList(i, end)); // 将从数据库中查询出来的数据同步到es中去
+            // postEsDTOList.subList(i, end)表示将list中索引为[i,end)中的数据取出
+            postEsDao.saveAll(postEsDTOList.subList(i, end)); // 将从数据库中查询出来的数据批量同步到es中去
         }
-        log.info("IncSyncPostToEs end, total {}", total);
+        log.info("IncSyncPostToEs end, total {}", total); // 同步完成日志
     }
 }

@@ -36,6 +36,12 @@ public class WxMpController {
     @Resource
     private WxMpMessageRouter router;
 
+    /**
+     * 接收消息，看看是否是公众号平台发的消息
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     @PostMapping("/")
     public void receiveMessage(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -63,12 +69,13 @@ public class WxMpController {
                     .fromEncryptedXml(request.getInputStream(), wxMpService.getWxMpConfigStorage(), timestamp,
                             nonce,
                             msgSignature);
-            log.info("message content = {}", inMessage.getContent());
-            // 路由消息并处理
+            log.info("message content = {}", inMessage.getContent()); // inMessage.getContent表示拿到了解密后的消息
+            // 拿到消息后，路由消息并处理，对于不同类型的消息，可以设置不同类型的消息处理器
             WxMpXmlOutMessage outMessage = router.route(inMessage);
             if (outMessage == null) {
                 response.getWriter().write("");
             } else {
+                // 将经过处理后的结果进行返回response
                 response.getWriter().write(outMessage.toEncryptedXml(wxMpService.getWxMpConfigStorage()));
             }
             return;
@@ -76,6 +83,14 @@ public class WxMpController {
         response.getWriter().println("不可识别的加密类型");
     }
 
+    /**
+     *
+     * @param timestamp
+     * @param nonce
+     * @param signature
+     * @param echostr 回显字符
+     * @return
+     */
     @GetMapping("/")
     public String check(String timestamp, String nonce, String signature, String echostr) {
         log.info("check");

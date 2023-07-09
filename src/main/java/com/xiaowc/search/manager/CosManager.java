@@ -18,7 +18,7 @@ public class CosManager {
     private CosClientConfig cosClientConfig;
 
     @Resource
-    private COSClient cosClient;
+    private COSClient cosClient; // 腾讯云对象存储客户端
 
     /**
      * 上传对象
@@ -30,7 +30,7 @@ public class CosManager {
     public PutObjectResult putObject(String key, String localFilePath) {
         PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key,
                 new File(localFilePath));
-        return cosClient.putObject(putObjectRequest);
+        return cosClient.putObject(putObjectRequest); // 上传到腾讯云对象存储服务中去
     }
 
     /**
@@ -43,6 +43,6 @@ public class CosManager {
     public PutObjectResult putObject(String key, File file) {
         PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key,
                 file);
-        return cosClient.putObject(putObjectRequest);
+        return cosClient.putObject(putObjectRequest); // 上传到腾讯云对象存储服务中去
     }
 }

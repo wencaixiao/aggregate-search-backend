@@ -47,17 +47,35 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
         // 每个用户串行帖子收藏
         // 锁必须要包裹住事务方法
         PostFavourService postFavourService = (PostFavourService) AopContext.currentProxy();
+        // String类重写了equals和hashcode方法，因此不同线程传进来的userAccount值相同，但是不属于同一个对象
+        // 如果常量池中存在当前字符串, 就会直接返回当前字符串，如果常量池中没有此字符串，会将此字符串放入常量池中后, 再返回
+        // 所以每次返回的是同一个对象
         synchronized (String.valueOf(userId).intern()) {
             return postFavourService.doPostFavourInner(userId, postId);
         }
     }
 
+    /**
+     * 分页获取用户收藏的帖子列表
+     *  select postId from post_favour where userId = #{favourUserId}表示从post_favour表中查询自己收藏的postId
+     *  再利用这个postId去从post表中查询完整的帖子post，相当于联表查询
+     *  ${ew.customSqlSegment}对应@Param(Constants.WRAPPER) Wrapper queryWrapper这个查询条件
+     *      select p.*
+     *      from post p
+     *      join (select postId from post_favour where userId = #{favourUserId}) pf
+     *      on p.id = pf.postId ${ew.customSqlSegment}
+     *
+     * @param page
+     * @param queryWrapper
+     * @param favourUserId
+     * @return
+     */
     @Override
     public Page<Post> listFavourPostByPage(IPage<Post> page, Wrapper<Post> queryWrapper, long favourUserId) {
         if (favourUserId <= 0) {
             return new Page<>();
         }
-        return baseMapper.listFavourPostByPage(page, queryWrapper, favourUserId);
+        return baseMapper.listFavourPostByPage(page, queryWrapper, favourUserId); // 自己写的SQL
     }
 
     /**
@@ -68,7 +86,7 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
      * @return
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)  // post和post_favour要么同时更新成功，要么同时更新失败
     public int doPostFavourInner(long userId, long postId) {
         PostFavour postFavour = new PostFavour();
         postFavour.setUserId(userId);
@@ -76,8 +94,9 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
         QueryWrapper<PostFavour> postFavourQueryWrapper = new QueryWrapper<>(postFavour);
         PostFavour oldPostFavour = this.getOne(postFavourQueryWrapper);
         boolean result;
+        // 更新post_favour的同时，必须同时更新post表，关联查询，必须保证原子性，因此本方法要添加事务
         // 已收藏
-        if (oldPostFavour != null) {
+        if (oldPostFavour != null) { // 数据库中有数据，说明之前已经收藏过了，此时取消收藏
             result = this.remove(postFavourQueryWrapper);
             if (result) {
                 // 帖子收藏数 - 1
@@ -90,7 +109,7 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
             } else {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR);
             }
-        } else {
+        } else { // 数据库中没有数据，说明之前还没有收藏，此时应该收藏成功，将数据插入
             // 未帖子收藏
             result = this.save(postFavour);
             if (result) {

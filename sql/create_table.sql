@@ -63,3 +63,9 @@ create table if not exists post_favour
     index idx_postId (postId),
     index idx_userId (userId)
 ) comment '帖子收藏';
+
+# 创建一个canal账户(账户名canal密码canal)
+CREATE USER canal IDENTIFIED BY 'canal';
+GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'canal'@'%';
+-- GRANT ALL PRIVILEGES ON *.* TO 'canal'@'%' ;
+FLUSH PRIVILEGES;

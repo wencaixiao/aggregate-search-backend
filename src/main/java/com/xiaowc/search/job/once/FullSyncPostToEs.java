@@ -39,14 +39,15 @@ public class FullSyncPostToEs implements CommandLineRunner {
         }
         // 将帖子转成包装类(就是对象es中的字段)
         List<PostEsDTO> postEsDTOList = postList.stream().map(PostEsDTO::objToDto).collect(Collectors.toList());
-        final int pageSize = 500;
-        int total = postEsDTOList.size();
-        log.info("FullSyncPostToEs start, total {}", total);
+        final int pageSize = 500; // 每次同步的数量
+        int total = postEsDTOList.size(); // 需要往es中同步数据的总数
+        log.info("FullSyncPostToEs start, total {}", total); // 开始同步日志
         for (int i = 0; i < total; i += pageSize) {
             int end = Math.min(i + pageSize, total);
             log.info("sync from {} to {}", i, end);
+            // postEsDTOList.subList(i, end)表示将list中索引为[i,end)中的数据取出
             postEsDao.saveAll(postEsDTOList.subList(i, end)); // 将从数据库中查询出来的数据同步到es中去
         }
-        log.info("FullSyncPostToEs end, total {}", total);
+        log.info("FullSyncPostToEs end, total {}", total); // 同步完成日志
     }
 }

@@ -56,7 +56,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        synchronized (userAccount.intern()) {
+        // String类重写了equals和hashcode方法，因此不同线程传进来的userAccount值相同，但是不属于同一个对象
+        // 如果常量池中存在当前字符串, 就会直接返回当前字符串，如果常量池中没有此字符串，会将此字符串放入常量池中后, 再返回
+        // 所以每次返回的是同一个对象
+        synchronized (userAccount.intern()) { // synchronized必须要锁住的是同一个对象，防止多线程的情况下创建账户相同的用户
             // 账户不能重复
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("userAccount", userAccount);
@@ -112,6 +115,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String unionId = wxOAuth2UserInfo.getUnionId();
         String mpOpenId = wxOAuth2UserInfo.getOpenid();
         // 单机锁
+        // String类重写了equals和hashcode方法，因此不同线程传进来的unionId值相同，但是不属于同一个对象
+        // 如果常量池中存在当前字符串, 就会直接返回当前字符串，如果常量池中没有此字符串，会将此字符串放入常量池中后, 再返回
+        // 所以每次返回的是同一个对象
         synchronized (unionId.intern()) {
             // 查询用户是否已存在
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -155,7 +161,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 从数据库查询（追求性能的话可以注释，直接走缓存）
         long userId = currentUser.getId();
-        currentUser = this.getById(userId);
+        currentUser = this.getById(userId); // 这里重新查询一遍数据库是为了返回最新的数据
         if (currentUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
@@ -243,6 +249,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userList.stream().map(this::getUserVO).collect(Collectors.toList());
     }
 
+    /**
+     * 分页获取用户列表（未封装）
+     *
+     * @param userQueryRequest
+     * @return
+     */
     @Override
     public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
@@ -264,16 +276,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.like(StringUtils.isNotBlank(userProfile), "userProfile", userProfile);
         queryWrapper.like(StringUtils.isNotBlank(userName), "userName", userName);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+                sortField); // SqlUtils.validSortField(sortField)用来校验排序字段是否合法（防止 SQL 注入）
         return queryWrapper;
     }
 
+    /**
+     * 分页获取用户封装列表（已封装、脱敏）
+     *
+     * @param userQueryRequest
+     * @return
+     */
     @Override
     public Page<UserVO> listUserVOByPage(UserQueryRequest userQueryRequest) {
         long current = userQueryRequest.getCurrent();
         long size = userQueryRequest.getPageSize();
         Page<User> userPage = this.page(new Page<>(current, size),
-                this.getQueryWrapper(userQueryRequest));
+                this.getQueryWrapper(userQueryRequest)); // 分页查询
         Page<UserVO> userVOPage = new Page<>(current, size, userPage.getTotal());
         List<UserVO> userVO = this.getUserVO(userPage.getRecords());
         userVOPage.setRecords(userVO);

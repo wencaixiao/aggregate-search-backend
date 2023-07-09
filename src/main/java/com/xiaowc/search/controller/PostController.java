@@ -64,14 +64,14 @@ public class PostController {
         BeanUtils.copyProperties(postAddRequest, post);
         List<String> tags = postAddRequest.getTags();
         if (tags != null) {
-            post.setTags(GSON.toJson(tags));
+            post.setTags(GSON.toJson(tags)); // 将标签列表转换成JSON字符串存入数据库中
         }
-        postService.validPost(post, true);
+        postService.validPost(post, true); // 判断帖子是否合法
         User loginUser = userService.getLoginUser(request);
         post.setUserId(loginUser.getId());
         post.setFavourNum(0);
         post.setThumbNum(0);
-        boolean result = postService.save(post);
+        boolean result = postService.save(post); // 将帖子存入数据库中
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         long newPostId = post.getId();
         return ResultUtils.success(newPostId);
@@ -91,14 +91,14 @@ public class PostController {
         }
         User user = userService.getLoginUser(request);
         long id = deleteRequest.getId();
-        // 判断是否存在
+        // 判断该帖子在数据库中是否存在
         Post oldPost = postService.getById(id);
         ThrowUtils.throwIf(oldPost == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人或管理员可删除
         if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        boolean b = postService.removeById(id);
+        boolean b = postService.removeById(id); // 删除帖子
         return ResultUtils.success(b);
     }
 
@@ -186,7 +186,7 @@ public class PostController {
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<Post> postPage = postService.page(new Page<>(current, size),
-                postService.getQueryWrapper(postQueryRequest));
+                postService.getQueryWrapper(postQueryRequest)); // 分页查询
         return ResultUtils.success(postService.getPostVOPage(postPage, request));
     }
 

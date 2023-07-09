@@ -64,7 +64,7 @@ public class SearchFacade {
     public SearchVO searchAll(@RequestBody SearchRequest searchRequest, HttpServletRequest request) {
         String type = searchRequest.getType();
         SearchTypeEnum searchTypeEnum = SearchTypeEnum.getEnumByValue(type); // 搜索的类型（post/user/picture/video）
-        ThrowUtils.throwIf(StringUtils.isBlank(type), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(StringUtils.isBlank(type), ErrorCode.PARAMS_ERROR); // 搜索的类型不能为空
         String searchText = searchRequest.getSearchText(); // 得到要查询的关键字
         long current = searchRequest.getCurrent();
         long pageSize = searchRequest.getPageSize();

@@ -36,6 +36,7 @@ public class AuthInterceptor {
      */
     @Around("@annotation(authCheck)")
     public Object doInterceptor(ProceedingJoinPoint joinPoint, AuthCheck authCheck) throws Throwable {
+        // ----------------------------- 原目标方法执行前 -------------------------------
         String mustRole = authCheck.mustRole();
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
@@ -59,8 +60,10 @@ public class AuthInterceptor {
                 }
             }
         }
+        // ----------------------------- 执行原目标方法 ----------------------------
         // 通过权限校验，放行
-        return joinPoint.proceed();
+        // 执行连接点方法，相当于上面的逻辑执行完之后，再去执行本身要执行的方法，这就是AOP
+        return joinPoint.proceed(); // 动态代理，手动推动目标方法执行
     }
 }
 

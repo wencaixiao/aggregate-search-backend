@@ -19,6 +19,9 @@
 
     <select id="listFavourPostByPage"
             resultType="com.xiaowc.search.model.entity.Post">
+        -- select postId from post_favour where userId = #{favourUserId}表示从post_favour表中查询自己收藏的postId
+        -- 再利用这个postId去从post表中查询完整的帖子post，相当于联表查询
+        -- ${ew.customSqlSegment}对应@Param(Constants.WRAPPER) Wrapper queryWrapper这个查询条件
         select p.*
         from post p
                  join (select postId from post_favour where userId = #{favourUserId}) pf

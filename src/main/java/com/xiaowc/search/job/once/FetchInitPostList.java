@@ -40,7 +40,7 @@ public class FetchInitPostList implements CommandLineRunner {
                 .execute()
                 .body();
 //        System.out.println(result);
-        // 2. 返回的是json数据，需要将json转对象保存到数据库中去
+        // 2. 爬虫得到的结果result返回的是json数据，需要将json转对象保存到数据库中去
         Map<String, Object> map = JSONUtil.toBean(result, Map.class);
         JSONObject data = (JSONObject) map.get("data");
         JSONArray records = (JSONArray) data.get("records");

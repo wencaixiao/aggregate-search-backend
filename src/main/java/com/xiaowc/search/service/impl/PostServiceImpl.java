@@ -74,6 +74,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Resource
     private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
+    /**
+     * 判断帖子是否合法
+     * @param post
+     * @param add
+     */
     @Override
     public void validPost(Post post, boolean add) {
         if (post == null) {
@@ -96,7 +101,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     /**
-     * 获取查询包装类
+     * 获取查询条件包装类
      *
      * @param postQueryRequest
      * @return
@@ -236,11 +241,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             // 根据帖子id从数据库中取出更完整的数据
             List<Post> postList = baseMapper.selectBatchIds(postIdList);
             if (postList != null) {
+                // 以id进行分组，但是id是唯一的，所以List<Post>里面其实只有一个元素
                 Map<Long, List<Post>> idPostMap = postList.stream().collect(Collectors.groupingBy(Post::getId));
+                // postIdList是从es中查询出来的数据，idPostMap里面是db中的数据，有可能db中的数据删除了，则此时需要同步删除es中的数据
                 postIdList.forEach(postId -> {
-                    if (idPostMap.containsKey(postId)) {
-                        resourceList.add(idPostMap.get(postId).get(0));
-                    } else {
+                    if (idPostMap.containsKey(postId)) { // db中包含es中的数据，直接添加即可
+                        resourceList.add(idPostMap.get(postId).get(0)); // 取第一个元素即可
+                    } else { // db中不包含es中的数据，此时要删除es中的数据，从而达到数据的一致性
                         // 从 es 清空 db 已物理删除的数据
                         String delete = elasticsearchRestTemplate.delete(String.valueOf(postId), PostEsDTO.class);
                         log.info("delete post {}", delete);
@@ -252,6 +259,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return page;
     }
 
+    /**
+     * 获取封装后的Post
+     * @param post
+     * @param request
+     * @return
+     */
     @Override
     public PostVO getPostVO(Post post, HttpServletRequest request) {
         PostVO postVO = PostVO.objToVo(post);
@@ -283,6 +296,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return postVO;
     }
 
+    /**
+     * 分页获取封装后的Post
+     * @param postPage
+     * @param request
+     * @return
+     */
     @Override
     public Page<PostVO> getPostVOPage(Page<Post> postPage, HttpServletRequest request) {
         List<Post> postList = postPage.getRecords();
@@ -331,6 +350,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return postVOPage;
     }
 
+    /**
+     * 分页获取列表（封装类）
+     *
+     * @param postQueryRequest
+     * @param request
+     * @return
+     */
     @Override
     public Page<PostVO> listPostVOByPage(PostQueryRequest postQueryRequest, HttpServletRequest request) {
         long current = postQueryRequest.getCurrent();

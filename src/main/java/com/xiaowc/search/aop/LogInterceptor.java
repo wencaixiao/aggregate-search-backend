@@ -22,10 +22,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class LogInterceptor {
 
     /**
-     * 执行拦截
+     * 执行拦截，在每个方法调用前后打印日志
      */
     @Around("execution(* com.xiaowc.search.controller.*.*(..))")
     public Object doInterceptor(ProceedingJoinPoint point) throws Throwable {
+        // --------------------------- 目标方法执行前 -----------------------------
         // 计时
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -41,8 +42,9 @@ public class LogInterceptor {
         // 输出请求日志
         log.info("request start，id: {}, path: {}, ip: {}, params: {}", requestId, url,
                 httpServletRequest.getRemoteHost(), reqParam);
-        // 执行原方法
+        // --------------------------- 执行原目标方法 -----------------------------
         Object result = point.proceed();
+        // ---------------------------原目标方法执行后 ----------------------------
         // 输出响应日志
         stopWatch.stop();
         long totalTimeMillis = stopWatch.getTotalTimeMillis();
